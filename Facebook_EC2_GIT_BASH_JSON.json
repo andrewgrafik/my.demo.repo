@@ -1,0 +1,46 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "CloudFormation Testing",
+    "Resources": {
+        "MyInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "AvailabilityZone": "us-east-1a",
+                "KeyName": "Github-Key",
+                "InstanceType": "t2.micro",
+                "ImageId": "ami-02354e95b39ca8dec",
+                "SecurityGroupIds": ["sg-0fda5b146ff45a27b"],
+                "SubnetId": "subnet-0c46ecd10ec87200f",
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": ["", [
+                                "#!/bin/bash\n",
+                                "yum update\n",
+                                "yum install -y httpd\n",
+                                "systemctl start httpd\n",
+                                "systemctl enable httpd\n",
+                                "yum -y install git\n",
+                                "mkdir /home/ec2-user/project\n",
+                                "cd /home/ec2-user/project\n",
+                                "git config --global user.name andrewgrafik\n",
+                                "git config --global user.email andrew_grafik@yahoo.com\n",
+                                "git init\n",
+                                "git add .\n",
+                                "git remote add origin https://github.com/andrewgrafik/my.demo.repo.git\n",
+                                "git clone https://github.com/andrewgrafik/my.demo.repo.git\n",
+                                "cd my.demo.repo/101-kittens-carousel-static-website-ec2/static-web/\n",
+                                "sudo mv *.* /var/www/html\n"
+                            ]]
+                    }
+                },
+                "Tags": [{
+                        "Key": "Name",
+                        "Value": "ClfrmEC2GitBash"
+                    }
+                ]
+            }
+        }
+        },
+       
+    "Outputs": {}
+}
