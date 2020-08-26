@@ -1,0 +1,75 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Stack template for Project 2:Static Webstie ASG/ELB, t2.micro, aws linux
+Resources:
+  WebServerGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones:
+        Fn::GetAZs: ''
+      DesiredCapacity: 2
+      MinSize: 1
+      MaxSize: 3
+      HealthCheckGracePeriod: 180
+      HealthCheckType: ELB
+      LaunchConfigurationName:
+        Ref: LaunchConfig
+      LoadBalancerNames:
+      - Ref: ElasticLoadBalancer
+  LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      InstanceType: t2.micro
+      KeyName: alwayson
+      ImageId: ami-08f3d892de259504d
+      SecurityGroups:
+      - Ref: InstanceSecurityGroup
+      UserData:
+        Fn::Base64: |
+            #!/bin/bash
+            yum update
+            yum install -y httpd
+            systemctl start httpd
+            systemctl enable httpd
+            yum -y install git
+            git clone https://github.com/andrewgrafik/my.projects.repo.git
+            cd my.projects.repo/101-kittens-carousel-static-website-ec2/static-web/
+            sudo cp *.* /var/www/html
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH + WebDMZ
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones:
+        Fn::GetAZs: ''
+      Listeners:
+      - LoadBalancerPort: 80
+        InstancePort: 80
+        Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: 3
+        UnhealthyThreshold: 5
+        Interval: 30
+        Timeout: 5
+Outputs:
+  ServerPublicIP:
+    Description: Public IP of the EC2 Instance
+    Value:
+      Fn::Join:
+      - ''
+      - - http://
+        - Fn::GetAtt:
+          - ElasticLoadBalancer
+          - DNSName
